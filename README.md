@@ -34,7 +34,7 @@ If you've never pushed a UWP app to a Win 10 IOT Core device before, here's pret
 * Install latest Win 10 IOT Core from NOOBS (yes, it's free)
 * Once Win 10 IOT Core boots (it can take a long time on the first boot), connect it to your wifi network
 * Connect to your Pi from the computer where you're managing this repo's code using Powershell
-* * Set the name, trusted hosts, reset the password, etc. (https://developer.microsoft.com/en-us/windows/iot/docs/powershell)
+	* Set the name, trusted hosts, reset the password, etc. (https://developer.microsoft.com/en-us/windows/iot/docs/powershell)
 * If you have Visual Studio installed, open this repo solution and Release - to ARM architecture - to Device and select the Raspberry Pi you just set up.
 
 Now, to run the app, navigate to the site your bot is broadcasting on your local network (should be ) click Apps and click Play next to the SpeechInterface app.
