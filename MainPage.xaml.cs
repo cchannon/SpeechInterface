@@ -31,12 +31,12 @@ namespace SpeechInterface
         private ResourceContext _speechContext;
         private ResourceMap _speechResourceMap;
         private const int BUTTON_PIN = 26;
-        private const int RESET_PIN = 19;
         private GpioPin buttonPin;
         private GpioPin resetPin;
         private MediaElement mediaElement = new MediaElement();
-        private bool StartConvo = false;
+        private bool StartConvo = true;
         private string convoId;
+        private int retry = 0;
         #endregion
 
         public MainPage()
@@ -129,13 +129,20 @@ namespace SpeechInterface
                         SpeakText("Sorry, I'm having difficulty initiating connection to the bot.");
                         return;
                     }
-                    bool activitySent = SendActivityToBot(botComm, convoId, args.Text);
-                    if (!activitySent)
+                    bool? activitySent = SendActivityToBot(botComm, convoId, args.Text);
+                    var responseText = "";
+                    switch (activitySent)
                     {
-                        SpeakText("Sorry, I'm having difficulty speaking to the bot.");
-                        return;
+                        case false:
+                            SpeakText("Sorry, I'm having difficulty speaking to the bot.");
+                            return;
+                        case true:
+                            responseText = GetActivitiesFromBot(botComm, convoId);
+                            break;
+                        case null:
+                        default:
+                            return;
                     }
-                    string responseText = GetActivitiesFromBot(botComm, convoId);
                     SpeakText(responseText ?? "hmmm... I'm not getting any response from the bot.");
                 }
                 else
@@ -204,7 +211,7 @@ namespace SpeechInterface
             return null;
         }
 
-        private bool SendActivityToBot(DirectLineCommunicator botComm, string convoId, string text)
+        private bool? SendActivityToBot(DirectLineCommunicator botComm, string convoId, string text)
         {
             HttpResponseMessage sentActivity = botComm.SendActivity(text, convoId);
 
@@ -218,7 +225,19 @@ namespace SpeechInterface
                     errorText = "error: invalid secret or token";
                     break;
                 case HttpStatusCode.Unauthorized:
-                    errorText = "error: invalid authorization header";
+                    if (retry > 2)
+                    {
+                        errorText = "error: invalid authorization header";
+                        retry = 0;
+                    }
+                    else
+                    {
+                        //In the event post comes in unauthorized, attempt to 
+                        //create a new convo and try again (max retry 2)
+                        this.convoId = StartNewConversation(botComm);
+                        SendActivityToBot(botComm, this.convoId, text);
+                        return null;
+                    }
                     break;
                 case HttpStatusCode.NotFound:
                     errorText = "error: object not found";
@@ -322,24 +341,7 @@ namespace SpeechInterface
             buttonPin.DebounceTimeout = TimeSpan.FromMilliseconds(50);
             buttonPin.ValueChanged += buttonPin_ValueChanged;
 
-            resetPin = gpio.OpenPin(RESET_PIN);
-            resetPin.SetDriveMode(buttonPin.IsDriveModeSupported(GpioPinDriveMode.InputPullUp)
-                ? GpioPinDriveMode.InputPullUp
-                : GpioPinDriveMode.Input);
-
-            resetPin.DebounceTimeout = TimeSpan.FromMilliseconds(50);
-            resetPin.ValueChanged += resetPin_ValueChanged;
-
             StatusBlock.Text = "READY";
-        }
-
-        private void resetPin_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
-        {
-            if (args.Edge == GpioPinEdge.FallingEdge)
-            {
-                StartConvo = true;
-                Recognize();
-            }
         }
 
         private void buttonPin_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs e)

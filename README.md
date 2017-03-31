@@ -27,6 +27,8 @@ For my prototype, I used a Raspberry Pi 3, a webcam (as the microphone) and an o
 
 There's a Fritzing diagram in the root of my GitHub repo, but the wiring is very simple; the buttons are connected to Ground and GPIO 19 and 26. 26 starts a new Bot copnversation (I added this to make debugging dialogs easier) and 19 just continues in the same conversation.
 
+__UPDATE NOTE:__ Latest version of the code uses a single button (on GPIO 26) rather than two buttons. This makes the device simpler to interact with. If you want two buttons for testing purposes, pull up a changeset from before 3/31/2017
+
 ---
 ### Win 10 IOT Core
 If you've never pushed a UWP app to a Win 10 IOT Core device before, here's pretty much all the steps you will need:
